@@ -1,12 +1,25 @@
+/**
+ * 最终版 Jenkinsfile
+ * 功能：
+ * 1. 使用 Maven 编译、测试、打包一个 Java 项目。
+ * 2. 构建一个 Docker 镜像来包含打包好的 .jar 文件。
+ * 3. 运行这个 Docker 镜像，模拟部署。
+ *
+ * 修正：
+ * - 所有的 sh 命令都使用了双引号 "..." 来确保 Jenkins 环境变量能被正确替换。
+ */
 pipeline {
+    // 1. 在任何可用的 agent 上运行
     agent any
 
+    // 2. 声明流水线需要使用的工具 (在 Jenkins 全局工具中配置)
     tools {
         maven 'maven-3.8.6'
     }
 
+    // 3. 定义流水线的各个阶段
     stages {
-        // ... Compile 和 Test 阶段保持不变 ...
+        // 编译阶段
         stage('Compile') {
             steps {
                 echo 'Compiling the application...'
@@ -14,6 +27,7 @@ pipeline {
             }
         }
 
+        // 测试阶段
         stage('Test') {
             steps {
                 echo 'Running tests...'
@@ -21,39 +35,43 @@ pipeline {
             }
         }
 
+        // 打包阶段 (使用 clean package 确保每次都是全新构建)
         stage('Package') {
             steps {
                 echo 'Packaging the application...'
-                // 我们运行 "clean package" 来确保每次都是全新的构建
                 sh 'mvn clean package'
             }
         }
 
-        // --- 新增的阶段 ---
+        // 构建 Docker 镜像阶段
         stage('Build Docker Image') {
             steps {
                 echo "Building the Docker image..."
-                // 使用 sh 命令调用 docker build
-                // -t my-java-app:${env.BUILD_NUMBER} 给镜像打上标签，名字叫 my-java-app，版本号是 Jenkins 的构建号
-                // . 表示使用当前目录的 Dockerfile
-                sh 'docker build -t my-java-app:${env.BUILD_NUMBER} .'
+                // 使用双引号来正确替换 ${env.BUILD_NUMBER} 变量
+                sh "docker build -t my-java-app:${env.BUILD_NUMBER} ."
             }
         }
 
+        // 运行 Docker 容器阶段 (模拟部署)
         stage('Run Docker Container') {
             steps {
                 echo "Running the Docker container..."
-                // 先停止并删除同名的旧容器（如果有的话），防止端口冲突
-                sh 'docker stop my-app-instance || true'
-                sh 'docker rm my-app-instance || true'
+                // 先停止并删除可能存在的同名旧容器
+                sh "docker stop my-app-instance || true"
+                sh "docker rm my-app-instance || true"
                 
-                // 运行新镜像
-                // -d 后台运行
-                // -p 8090:8080 将主机的 8090 端口映射到容器的 8080 端口（Java应用通常的端口，虽然我们没用到）
-                // --name 给容器起个实例名
-                // my-java-app:${env.BUILD_NUMBER} 指定要运行哪个镜像
-                sh 'docker run -d -p 8090:8080 --name my-app-instance my-java-app:${env.BUILD_NUMBER}'
+                // 运行新构建的镜像
+                // 使用双引号来正确替换 ${env.BUILD_NUMBER} 变量
+                sh "docker run -d -p 8090:8080 --name my-app-instance my-java-app:${env.BUILD_NUMBER}"
             }
+        }
+    }
+
+    // 4. 定义构建结束后的操作
+    post {
+        // 无论成功还是失败，总是在最后清理工作空间
+        always {
+            cleanWs()
         }
     }
 }
