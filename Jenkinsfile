@@ -10,12 +10,12 @@ pipeline {
             causeMessage: 'Webhook triggered by Git push',
             // 打印接收到的数据，方便调试
             printPostContent: true,
-            // 定义过滤器：仅当 push 事件发生在 main 分支时才触发
-            filter: {
-                // **【最终修正】** 使用双引号字符串和反斜杠对美元符号 $ 进行转义
-                expression: "\$.ref",
-                text: 'refs/heads/main'
-            }
+
+            // **【最终修正】** 使用插件的显式参数，彻底避免 Groovy 解析歧义
+            // 过滤表达式，用于提取 JSON 请求中的 'ref' 字段
+            filterExpression: '$.ref',
+            // 过滤文本，只有当 'ref' 字段的值等于它时，才触发构建
+            filterText: 'refs/heads/main'
         )
     }
 
