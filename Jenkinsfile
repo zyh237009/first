@@ -1,24 +1,19 @@
 pipeline {
     agent any
 
-    // 新增部分：定义流水线的触发器
+    // 定义流水线的自动触发器
     triggers {
-        // 定义一个通用的 Webhook 触发器
         genericWebhookTrigger(
-            // 1. 定义一个安全令牌 (token)，相当于一个接头暗号
+            // 定义一个用于安全验证的令牌 (可自定义)
             token: 'my-secret-token-123',
-
-            // 2. 定义触发的原因，会显示在构建历史里
+            // 定义触发原因，会显示在构建历史中
             causeMessage: 'Webhook triggered by Git push',
-
-            // 3. 打印接收到的所有数据，方便调试 (生产环境可设为 false)
+            // 打印接收到的数据，方便调试
             printPostContent: true,
-            printContributedVariables: true,
-
-            // 4. 定义过滤器：只有满足条件的信号才能触发流水线
+            // 定义过滤器：仅当 push 事件发生在 main 分支时才触发
             filter: {
-                // 检查请求中的 ref 字段是否是 "refs/heads/main" (即推送到 main 分支)
-                expression: '$.ref',
+                // **【修正处】** 对美元符号 $ 进行转义，防止 Groovy 语法解析错误
+                expression: '\$.ref',
                 text: 'refs/heads/main'
             }
         )
@@ -29,7 +24,6 @@ pipeline {
     }
 
     stages {
-        // ... 这里的所有 stage 保持不变 ...
         stage('Compile') {
             steps {
                 echo 'Compiling the application...'
@@ -71,3 +65,4 @@ pipeline {
         }
     }
 }
+
