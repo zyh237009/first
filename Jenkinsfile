@@ -12,8 +12,8 @@ pipeline {
             printPostContent: true,
             // 定义过滤器：仅当 push 事件发生在 main 分支时才触发
             filter: {
-                // **【修正处】** 对美元符号 $ 进行转义，防止 Groovy 语法解析错误
-                expression: '\$.ref',
+                // **【最终修正】** 使用双引号字符串和反斜杠对美元符号 $ 进行转义
+                expression: "\$.ref",
                 text: 'refs/heads/main'
             }
         )
